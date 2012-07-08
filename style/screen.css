@@ -1,0 +1,14 @@
+body
+{
+	background: #000;
+}
+
+.mario
+{
+	background: url(../images/mario_walk.gif);
+	height: 168px;
+	left: 10px;
+	position: absolute;
+	top: 200px;
+	width: 90px;
+}

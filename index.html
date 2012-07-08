@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Cursometer Test</title>
+	<link rel="stylesheet" href="style/screen.css" type="text/css" />
+</head>
+<body>
+
+	<div class="mario"></div>
+
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+	<script src="script/jquery.cursometer.1.0.0.js"></script>
+	<script type="text/javascript">
+
+		$(window.document).cursometer({
+			onUpdateSpeed: function(speed) {
+				var currSpeed = parseInt(speed);
+				var $mario = $('.mario');
+				
+				var currLeft = $mario.offset().left;
+				
+				if(currLeft > 900)
+				{
+					$mario.css('left', 0);
+					return;
+				}
+				
+				if(currSpeed === 0)
+				{
+					$mario.css('background-position', '0 0');
+				}
+				else
+				{
+					$mario.css('left', '+=' + parseInt(speed));
+					$mario.css('background-position', '95px 0');
+				}
+			}
+		});
+	
+	</script>
+</body>
+</html>
