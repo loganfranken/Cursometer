@@ -47,11 +47,13 @@
 		
 			// Initialize data
 			var data = {
-				options: options,
+				options: _options,
 				_currSpeed: 0,
 				_updateSpeedTimeout: null,
 				_lastMousePos: null,
 				_currMousePos: null,
+				_lastUpdateSpeed:0,
+				_inMotion:false,
 				_hasAttachedMousemoveEvent: false
 			};
 			
@@ -79,11 +81,13 @@
 	
 		var speed = 0;
 		
-		if(currMousePos && lastMousePos)
+		if(currMousePos && lastMousePos && data._inMotion)
 		{
 			// Calculate speed
 			var distance = calcDistance(currMousePos.point, lastMousePos.point);
 			speed = (distance/(currMousePos.timestamp - lastMousePos.timestamp));
+			data._lastUpdateSpeed = (new Date()).getTime();
+			data._inMotion = data._lastUpdateSpeed - currMousePos.timestamp < data.options.updateSpeedRate;
 		}
 		
 		// Update speed
@@ -91,10 +95,12 @@
 		
 		// Call Update Speed callback
 		data.options.onUpdateSpeed && data.options.onUpdateSpeed.apply($this[0], [currSpeed]);
-		
-		data._updateSpeedTimeout = setTimeout(function() {
-			updateSpeed.apply($this[0]);
-		}, data.options.speedPollingRate);
+		if(speed){
+				  data._updateSpeedTimeout = setTimeout(function() {
+					updateSpeed.apply($this[0]);
+				}, data.options.updateSpeedRate);
+		}
+
 	};
 
 	/**
@@ -135,7 +141,8 @@
 		// We need an event to capture the mouse's (X, Y), so we fire a quick, one-time
 		// mousemove event (Credit: http://stackoverflow.com/questions/1133807/mouse-position-using-jquery-outside-of-events)
 		$this.one('mousemove.' + NAMESPACE, function(event) {
-		
+
+			data._inMotion = true;
 			// Shift mouse position result data
 			if(data._currMousePos)
 			{
@@ -152,6 +159,7 @@
 				captureMousePosition.apply($this[0]);
 			}, data.options.captureMouseMoveRate);
 
+			updateSpeed.apply($this[0]);
 			data._hasAttachedMousemoveEvent = false;
 			
 		});
