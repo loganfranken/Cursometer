@@ -10,9 +10,9 @@
  * Last Updated: 7-30-11 5:26PM
  */
 (function($) {
-	
+
 	var NAMESPACE = 'cursometer';
-	
+
 	/**
 	 * Creates a new Point
 	 * @class	An X, Y coordinate in a 2D plane
@@ -23,7 +23,7 @@
 		this.x = x;
 		this.y = y;
 	};
-	
+
 	/**
 	 * Creates a new Historical Point
 	 * @class	A Point, including the time the Point was captured
@@ -34,17 +34,17 @@
 		this.point = point;
 		this.timestamp = timestamp;
 	};
-	
+
 	function initialize(options) {
-		
+
 		return this.each(function() {
-		
+
 			// Merge default options
 			options && $.extend(_options, options);
-			
+
 			// Initialize plug-in
 			var $this = $(this);
-		
+
 			// Initialize data
 			var data = {
 				options: _options,
@@ -56,17 +56,17 @@
 				_inMotion:false,
 				_hasAttachedMousemoveEvent: false
 			};
-			
+
 			$this.data(NAMESPACE, data);
-		
+
 			// Initialize events
-			$this.mouseenter(updateSpeed);
-			$this.mouseleave(stopPolling);
+			$this.bind('mouseenter touchstart', updateSpeed);
+			$this.bind('mouseleave touchend', stopPolling);
 			captureMousePosition.apply(this);
-		
+
 		});
 	}
-	
+
 	/**
 	 * @private
 	 * Updates the current mouse speed
@@ -78,9 +78,9 @@
 
 		var currMousePos = data._currMousePos;
 		var lastMousePos = data._lastMousePos;
-	
+
 		var speed = 0;
-		
+
 		if(currMousePos && lastMousePos && data._inMotion)
 		{
 			// Calculate speed
@@ -89,10 +89,10 @@
 			data._lastUpdateSpeed = (new Date()).getTime();
 			data._inMotion = data._lastUpdateSpeed - currMousePos.timestamp < data.options.updateSpeedRate;
 		}
-		
+
 		// Update speed
 		var currSpeed = data._currSpeed = speed;
-		
+
 		// Call Update Speed callback
 		data.options.onUpdateSpeed && data.options.onUpdateSpeed.apply($this[0], [currSpeed]);
 		if(speed){
@@ -108,21 +108,21 @@
 	 * Stops capturing mouse speed
 	 */
 	function stopPolling() {
-	
+
 		var $this = $(this);
 		var data = $this.data(NAMESPACE);
-	
+
 		// Reset values
 		data._currSpeed = 0;
 		data._lastMousePosCalc = null;
 		data._currMousePosCalc = null;
 		data._hasAttachedMousemoveEvent = false;
-	
+
 		// Clear timeouts
 		data._updateSpeedTimeout && clearTimeout(data._updateSpeedTimeout);
-		
+
 	};
-	
+
 	/**
 	 * @private
 	 * Captures the User's current mouse position
@@ -131,16 +131,16 @@
 	{
 		var $this = $(this);
 		var data = $this.data(NAMESPACE);
-	
+
 		// A mousemove event has already been attached to this element, don't attach another
 		if(data._hasAttachedMousemoveEvent)
 		{
 			return;
 		}
-	
+
 		// We need an event to capture the mouse's (X, Y), so we fire a quick, one-time
 		// mousemove event (Credit: http://stackoverflow.com/questions/1133807/mouse-position-using-jquery-outside-of-events)
-		$this.one('mousemove.' + NAMESPACE, function(event) {
+		$this.one('mousemove.' + NAMESPACE + ' touchmove.' + NAMESPACE, function(event) {
 
 			data._inMotion = true;
 			// Shift mouse position result data
@@ -148,25 +148,37 @@
 			{
 				data._lastMousePos = data._currMousePos;
 			}
-		
+
 			// Get the current mouse position
-			var currMouseX = event.pageX;
-			var currMouseY = event.pageY;
+			var currMouseX;
+			var currMouseY;
+
+			if(event.type === 'touchmove')
+			{
+				currMouseX = event.originalEvent.touches[0].pageX;
+				currMouseY = event.originalEvent.touches[0].pageX;
+			}
+			else
+			{
+				currMouseX = event.pageX;
+				currMouseY = event.pageY;
+			}
+
 			var currMousePos = new Point(currMouseX, currMouseY);
 			data._currMousePos = new HistoricalPoint(currMousePos, (new Date()).getTime());
-			
+
 			setTimeout(function() {
 				captureMousePosition.apply($this[0]);
 			}, data.options.captureMouseMoveRate);
 
 			updateSpeed.apply($this[0]);
 			data._hasAttachedMousemoveEvent = false;
-			
+
 		});
-		
+
 		data._hasAttachedMousemoveEvent = true;
 	}
-	
+
 	/**
 	 * @private
 	 * Calculates the distance between two Points
@@ -175,9 +187,9 @@
 	 * @return	{Number}	The distance between the two Points
 	 */
 	function calcDistance(mousePosA, mousePosB) {
-	
+
 		var distance = 0;
-	
+
 		if(mousePosA && mousePosB)
 		{
 			// Calculate distance
@@ -185,11 +197,11 @@
 			var yDiff = Math.pow((mousePosA.y - mousePosB.y), 2);
 			distance = Math.sqrt(xDiff + yDiff);
 		}
-		
+
 		return distance;
-		
+
 	};
-	
+
 	/**
 	 * @private
 	 * Returns the current speed of the cursor
@@ -198,7 +210,7 @@
 	{
 		return $(this).data(NAMESPACE)._currSpeed;
 	}
-	
+
 	/**
 	 * @private
 	 * Public methods for plug-in
@@ -207,7 +219,7 @@
 		init: initialize,
 		getCurrentSpeed: getCurrentSpeed
 	};
-	
+
 	/**
 	 * @private
 	 * Configuration options for plug-in
@@ -219,7 +231,7 @@
 	};
 
 	$.fn.cursometer = function(methodName) {
-		
+
 		if(_methods[methodName])
 		{
 			return _methods[methodName].apply(this, Array.prototype.slice.call(arguments, 1));
@@ -232,7 +244,7 @@
 		{
 			$.error('Method ' +  methodName + ' does not exist on jQuery.cursometer');
 		}
-		
+
 	};
-	
+
 })(jQuery);
